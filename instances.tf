@@ -1,14 +1,10 @@
 provider "ibm" {
 }
 
-variable "ssh_key" {
-  description = "Public SSH key used to connect to the virtual guest"
-  default = "patro-key"
-}
-
 variable "datacenter" {
   description = "SoftLayer datacenter where infrastructure resources will be deployed"
   default = "wdc04"
+
 }
 
 
@@ -24,12 +20,6 @@ variable "domain" {
 
 
 
-# This will create a new SSH key that will show up under the \
-# Devices>Manage>SSH Keys in the SoftLayer console.
-resource "ibm_compute_ssh_key" "orpheus_public_key" {
-    label = "Orpheus Public Key"
-    public_key = "${var.ssh_key}"
-}
 
 variable "wps" {
   type = "map"
@@ -47,7 +37,19 @@ variable "wps" {
  
 }
 
-resource "ibm_compute_vm_instance" "wps" {
+resource "tls_private_key" "ssh" {
+  algorithm = "RSA"
+}
+
+variable "public_key_name" {
+  description = "Name of the public SSH key used to connect to the servers"
+  default     = "cam-public-key-lamp-hybrid"
+}
+
+
+
+ resource "ibm_compute_vm_instance" "wps" {
+#resource "softlayer_virtual_guest" "wps" {
     
     datacenter  = "${var.datacenter}"
     domain      = "${var.domain}"
@@ -64,20 +66,20 @@ resource "ibm_compute_vm_instance" "wps" {
     private_network_only  = "${var.wps["private_network_only"]}"
 
     user_metadata = "{\"value\":\"newvalue\"}"
+}
 
-    ssh_key_ids = ["${ibm_compute_ssh_key.orpheus_public_key.id}"]
+#resource "ibm_compute_ssh_key" "temp_public_key" {
+#    label      = "${var.public_key_name}-temp"
+#    public_key = "${tls_private_key.ssh.public_key_openssh}"
+#}
+
+
+module "provision" {
+    source = "github.com/ibm-cloud-architecture/terraform-module-wps-deploy"
+
+#    wps = "${softlayer_virtual_guest.wps.ipv4_address}"
+    wps = "${ibm_compute_vm_instance.wps.ipv4_address}"
 }
 
 
-
-
-
-
-##### ICP Instance details ######
-module "wps-provision" {
-    source = "github.com/ibm-cloud-architecture/terraform-module-wps-deploy"
-    
-    wps = "${ibm_compute_vm_instance.wps.ipv4_address}"
-    
-} 
 
