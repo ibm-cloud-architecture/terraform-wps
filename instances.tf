@@ -18,6 +18,16 @@ variable "domain" {
     default = "wps.patro" 
 }
 
+variable "public_key_name" {
+  description = "Name of the public SSH key used to connect to the servers"
+  default     = "cam-public-key-wps"
+}
+
+variable "public_key" {
+  description = "Public SSH key used to connect to the servers"
+}
+
+
 
 
 
@@ -37,15 +47,19 @@ variable "wps" {
  
 }
 
+resource "ibm_compute_ssh_key" "cam_public_key" {
+  label      = "${var.public_key_name}"
+  public_key = "${var.public_key}"
+}
+
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
 }
 
-variable "public_key_name" {
-  description = "Name of the public SSH key used to connect to the servers"
-  default     = "cam-public-key-lamp-hybrid"
+resource "ibm_compute_ssh_key" "temp_public_key" {
+    label      = "${var.public_key_name}-temp"
+    public_key = "${tls_private_key.ssh.public_key_openssh}"
 }
-
 
 
  resource "ibm_compute_vm_instance" "wps" {
@@ -66,12 +80,14 @@ variable "public_key_name" {
     private_network_only  = "${var.wps["private_network_only"]}"
 
     user_metadata = "{\"value\":\"newvalue\"}"
+
+    ssh_key_ids              = ["${ibm_compute_ssh_key.cam_public_key.id}", "${ibm_compute_ssh_key.temp_public_key.id}"]
 }
 
-#resource "ibm_compute_ssh_key" "temp_public_key" {
-#    label      = "${var.public_key_name}-temp"
-#    public_key = "${tls_private_key.ssh.public_key_openssh}"
-#}
+resource "ibm_compute_ssh_key" "temp_public_key" {
+    label      = "${var.public_key_name}-temp"
+    public_key = "${tls_private_key.ssh.public_key_openssh}"
+}
 
 
 module "provision" {
@@ -79,6 +95,7 @@ module "provision" {
 
 #    wps = "${softlayer_virtual_guest.wps.ipv4_address}"
     wps = "${ibm_compute_vm_instance.wps.ipv4_address}"
+    ssh_key = "${tls_private_key.ssh.private_key_pem}"
 }
 
 
