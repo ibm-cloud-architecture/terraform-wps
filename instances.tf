@@ -1,24 +1,36 @@
 provider "ibm" {
 }
 
-data "softlayer_ssh_key" "public_key" {
-  label = "${var.key_name}"
-}
-
-variable "key_name" { 
-  description = "Name or reference of SSH key to provision softlayer instances with"
+variable "ssh_key" {
+  description = "Public SSH key used to connect to the virtual guest"
   default = "patro-key"
 }
 
+variable "datacenter" {
+  description = "SoftLayer datacenter where infrastructure resources will be deployed"
+  default = "wdc04"
+}
 
-##### Common VM specifications ######
-variable "datacenter" { default = "wdc04" }
-variable "domain" { default = "wps.patro" }
 
-# Name of the ICP installation, will be used as basename for VMs
-variable "instance_name" { default = "wps" }
+variable "instance_name" {
+  description = "Virtual Machine name"
+  default = "wps"
+}
 
-##### ICP Instance details ######
+variable "domain" { 
+    description = "Virtual Machine domain"
+    default = "wps.patro" 
+}
+
+
+
+# This will create a new SSH key that will show up under the \
+# Devices>Manage>SSH Keys in the SoftLayer console.
+resource "ibm_compute_ssh_key" "orpheus_public_key" {
+    label = "Orpheus Public Key"
+    public_key = "${var.ssh_key}"
+}
+
 variable "wps" {
   type = "map"
   
@@ -35,7 +47,7 @@ variable "wps" {
  
 }
 
-resource "softlayer_virtual_guest" "wps" {
+resource "ibm_compute_vm_instance" "wps" {
     
     datacenter  = "${var.datacenter}"
     domain      = "${var.domain}"
@@ -53,23 +65,19 @@ resource "softlayer_virtual_guest" "wps" {
 
     user_metadata = "{\"value\":\"newvalue\"}"
 
-    ssh_key_ids = ["${data.softlayer_ssh_key.public_key.id}"]
+    ssh_key_ids = ["${ibm_compute_ssh_key.orpheus_public_key.id}"]
 }
 
+
+
+
+
+
+##### ICP Instance details ######
 module "wps-provision" {
     source = "github.com/ibm-cloud-architecture/terraform-module-wps-deploy"
     
-    wps = "${softlayer_virtual_guest.wps.ipv4_address}"
-    
-    # We will let terraform generate a new ssh keypair 
-    # for boot master to communicate with worker and proxy nodes
-    # during WPS deployment
-    generate_key = true
-    
-    # SSH user and key for terraform to connect to newly created SoftLayer resources
-    # ssh_key is the private key corresponding to the public keyname specified in var.key_name
-    ssh_user  = "root"
-    ssh_key   = "~/.ssh/id_rsa"
+    wps = "${ibm_compute_vm_instance.wps.ipv4_address}"
     
 } 
 
