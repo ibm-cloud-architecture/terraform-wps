@@ -1,4 +1,4 @@
-provider "softlayer" {
+provider "ibm" {
 #    username = "${var.sl_username}"
 #    api_key = "${var.sl_api_key}"
 }
