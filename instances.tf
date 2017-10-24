@@ -1,6 +1,4 @@
 provider "ibm" {
-#    username = "${var.sl_username}"
-#    api_key = "${var.sl_api_key}"
 }
 
 data "softlayer_ssh_key" "public_key" {
