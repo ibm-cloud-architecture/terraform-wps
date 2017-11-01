@@ -3,7 +3,7 @@ provider "ibm" {
 
 variable "datacenter" {
   description = "SoftLayer datacenter where infrastructure resources will be deployed"
-  default = "wdc04"
+  default = "lon02"
 
 }
 
