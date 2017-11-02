@@ -84,12 +84,6 @@ resource "ibm_compute_ssh_key" "temp_public_key" {
     ssh_key_ids              = ["${ibm_compute_ssh_key.cam_public_key.id}", "${ibm_compute_ssh_key.temp_public_key.id}"]
 }
 
-resource "ibm_compute_ssh_key" "temp_public_key" {
-    label      = "${var.public_key_name}-temp"
-    public_key = "${tls_private_key.ssh.public_key_openssh}"
-}
-
-
 module "provision" {
     source = "github.com/ibm-cloud-architecture/terraform-module-wps-deploy"
 
